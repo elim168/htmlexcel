@@ -138,10 +138,10 @@ public class ExcelGenerator {
 		Sheet sheet = wb.getSheetAt(imageCell.getSheet());
 		Drawing<?> drawing = sheet.createDrawingPatriarch();
 		ClientAnchor clientAnchor = wb.getCreationHelper().createClientAnchor();
-		clientAnchor.setCol1(imageCell.getCol());
-		clientAnchor.setCol2(imageCell.getCol() + 1);
-		clientAnchor.setRow1(imageCell.getRow());
-		clientAnchor.setRow2(imageCell.getRow() + 1);
+		clientAnchor.setCol1(imageCell.getCol1());
+		clientAnchor.setCol2(imageCell.getCol2() + 1);
+		clientAnchor.setRow1(imageCell.getRow1());
+		clientAnchor.setRow2(imageCell.getRow2() + 1);
 		drawing.createPicture(clientAnchor, pictureIndex);
 	}
 
@@ -208,10 +208,7 @@ public class ExcelGenerator {
 						style.setBorder(border);
 						this.createStyles(style, wb);
 					}
-					if (cell.getImage() != null) {
-						ImageCell imageCell = new ImageCell(i, rowNum, colNum, cell.getImage());
-						this.imageCells.add(imageCell);
-					}
+					this.addImageCell(i, rowNum, colNum, cell);
 				}
 			}
 			CellStyle commonCellStyle = wb.createCellStyle();
@@ -220,6 +217,30 @@ public class ExcelGenerator {
 				this.setBorder(commonCellStyle);
 			}
 			this.commonCellStyles.put(table, commonCellStyle);
+		}
+	}
+
+	/**
+	 * 保存一份图片信息
+	 * @param sheetIndex
+	 * @param rowNum
+	 * @param colNum
+	 * @param cell
+	 */
+	private void addImageCell(int sheetIndex, int rowNum, int colNum, Td cell) {
+		if (cell.getImage() != null) {
+			int row1 = rowNum;
+			int row2 = row1;
+			int col1 = colNum;
+			int col2 = col1;
+			if (cell.getRowspan() > 1) {
+				row2 += cell.getRowspan() - 1;
+			}
+			if (cell.getColspan() > 1) {
+				col2 += cell.getColspan() - 1;
+			}
+			ImageCell imageCell = new ImageCell(sheetIndex, row1, row2, col1, col2, cell.getImage());
+			this.imageCells.add(imageCell);
 		}
 	}
 
@@ -644,8 +665,10 @@ public class ExcelGenerator {
 	@Data
 	private static class ImageCell {
 		private final int sheet;
-		private final int row;
-		private final int col;
+		private final int row1;
+		private final int row2;
+		private final int col1;
+		private final int col2;
 		private final Img image;
 	}
 	
