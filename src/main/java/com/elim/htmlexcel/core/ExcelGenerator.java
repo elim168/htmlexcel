@@ -341,15 +341,25 @@ public class ExcelGenerator {
 		 * 记录行高
 		 */
 		private Map<Integer, Float> rowHeights = new HashMap<>();
+		/**
+		 * 合并区域
+		 */
+		private List<MergeArea> mergeAreas = new ArrayList<>();
+		/**
+		 * 记录列的合并信息，Key是列索引，Value是剩余的需要合并的行
+		 */
+		private Map<Integer, Integer> colRowSpans = new HashMap<>();
 		
 		private final Table table;
 		private final StringWriter out = new StringWriter();
+		private int commonStyleIndex;
 		
 		/**
 		 * 构建表单数据
 		 * @return
 		 */
 		public String buildData() {
+			this.commonStyleIndex = ExcelGenerator.this.commonCellStyles.get(this.table).getIndex();
 			this.calculateColumnWidths();
 			this.calculateRowHeights();
 			this.beginSheet();
@@ -374,6 +384,13 @@ public class ExcelGenerator {
 				out.write("<autoFilter ref=\"A1:");
 				out.write(this.lastCell);
 				out.write("\"/>");
+			}
+			if (!this.mergeAreas.isEmpty()) {
+				out.write("<mergeCells count=\"" + this.mergeAreas.size() + "\">");
+				for (MergeArea area : this.mergeAreas) {
+					out.write("<mergeCell ref=\"" + area.getAreaInfo() + "\"/>");
+				}
+				out.write("</mergeCells>");
 			}
 			out.write("</worksheet>");
         }
@@ -419,11 +436,13 @@ public class ExcelGenerator {
 			out.write(">\n");
 			int columnIndex = 0;
 			for (Td cell : row.getCells()) {
+				columnIndex = this.handleRowspanRemain(rowNum, columnIndex);
+				this.prepareMergeArea(rowNum, columnIndex, cell);
 				int styleIndex;
 				if (cell.getStyle() != null) {
 					styleIndex = ExcelGenerator.this.cellStyles.get(cell.getStyle()).getIndex();
 				} else {
-					styleIndex = ExcelGenerator.this.commonCellStyles.get(this.table).getIndex();
+					styleIndex = this.commonStyleIndex;
 				}
 				switch (cell.getDataType()) {
 				case NUMBER:
@@ -432,9 +451,58 @@ public class ExcelGenerator {
 				default:
 					this.lastCell = this.createCell(rowNum, columnIndex, cell.getValue(), styleIndex);
 				}
+				if (cell.getColspan() > 1) {//需要合并列
+					for (int i=1; i<cell.getColspan(); i++) {
+						this.lastCell = this.createCell(rowNum, columnIndex + i, "", this.commonStyleIndex);
+					}
+					columnIndex += cell.getColspan() - 1;
+				}
 				columnIndex++;
 			}
+			this.handleRowspanRemain(rowNum, columnIndex);
 			out.write("</row>\n");
+		}
+
+		/**
+		 * 处理合并区间
+		 * @param rowNum
+		 * @param columnIndex
+		 * @param cell
+		 */
+		private void prepareMergeArea(int rowNum, int columnIndex, Td cell) {
+			if (cell.getRowspan() > 1) {
+				this.colRowSpans.put(columnIndex, cell.getRowspan() - 1);
+				int lastCol = columnIndex;
+				if (cell.getColspan() > 1) {
+					lastCol += cell.getColspan() - 1;
+					for (int i=1; i<cell.getColspan(); i++) {
+						this.colRowSpans.put(columnIndex + 1, cell.getRowspan() - 1);
+					}
+				}
+				this.mergeAreas.add(new MergeArea(rowNum, rowNum + cell.getRowspan() -1, columnIndex, lastCol));
+			} else if (cell.getColspan() > 1) {
+				this.mergeAreas.add(new MergeArea(rowNum, rowNum, columnIndex, columnIndex + cell.getColspan() - 1));
+			}
+		}
+
+		/**
+		 * 处理剩余的需要合并的行
+		 * @param rowNum 行号
+		 * @param columnIndex 当前列索引
+		 * @return 处理了合并的列后下一个单元格的列索引
+		 */
+		private int handleRowspanRemain(int rowNum, int columnIndex) {
+			while (this.colRowSpans.containsKey(columnIndex)) {
+				Integer remainRowspan = this.colRowSpans.get(columnIndex);
+				remainRowspan--;
+				if (remainRowspan == 0) {
+					this.colRowSpans.remove(columnIndex);
+				} else {
+					this.colRowSpans.put(columnIndex, remainRowspan);
+				}
+				this.createCell(rowNum, columnIndex++, "", this.commonStyleIndex);
+			}
+			return columnIndex;
 		}
 		
 		/**
@@ -579,6 +647,29 @@ public class ExcelGenerator {
 		private final int row;
 		private final int col;
 		private final Img image;
+	}
+	
+	/**
+	 * 合并范围
+	 * @author Elim
+	 * 2017年9月7日
+	 */
+	@RequiredArgsConstructor
+	private static class MergeArea {
+		private final int row1;
+		private final int row2;
+		private final int col1;
+		private final int col2;
+		
+		/**
+		 * 获取合并的范围的字符串表示
+		 * @return
+		 */
+		public String getAreaInfo() {
+			String ref1 = new CellReference(row1, col1).formatAsString();
+			String ref2 = new CellReference(row2, col2).formatAsString();
+			return ref1 + ":" + ref2;
+		}
 	}
 
 }

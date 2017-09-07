@@ -17,7 +17,6 @@ public class HelloWorld {
 	public void test() throws IOException {
 		ExcelGenerator generator = new ExcelGenerator();
 		InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream("helloworld.html");
-		System.out.println(inputStream);
 		BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
 		StringBuilder builder = new StringBuilder();
 		String line = null;

@@ -34,4 +34,7 @@ public class Td extends StyleElement {
 	 */
 	private Img image;
 	
+	private int colspan;
+	private int rowspan;
+	
 }

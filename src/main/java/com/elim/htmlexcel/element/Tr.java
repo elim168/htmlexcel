@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Tr extends StyleElement {
 
-	private static final String IMAGE_SRC_PATTERN = "data:image/(jpeg|png);base64,\\w+";
+	private static final String IMAGE_SRC_PATTERN = "data:image/(jpeg|png);base64,.+";
 	
 	@XmlTransient
 	@Getter
@@ -77,6 +77,8 @@ public class Tr extends StyleElement {
 		}
 		String autoHeight = tdElement.getAttribute("autoHeight");
 		String dataType = tdElement.getAttribute("dataType");
+		String rowspan = tdElement.getAttribute("rowspan");
+		String colspan = tdElement.getAttribute("colspan");
 		String style = tdElement.getAttribute("style");
 		if (StringUtils.isNotBlank(dataType)) {
 			try {
@@ -87,6 +89,12 @@ public class Tr extends StyleElement {
 		if (StringUtils.isNotBlank(style)) {
 			Style styleObj = new StyleAdapter().unmarshal(style);
 			cell.setStyle(styleObj);
+		}
+		if (StringUtils.isNotBlank(rowspan)) {
+			cell.setRowspan(Integer.parseInt(rowspan.trim()));
+		}
+		if (StringUtils.isNotBlank(colspan)) {
+			cell.setColspan(Integer.parseInt(colspan.trim()));
 		}
 		cell.setParent(this);
 		return cell;
