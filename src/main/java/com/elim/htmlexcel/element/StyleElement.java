@@ -31,17 +31,22 @@ public abstract class StyleElement {
 	private StyleElement parent;
 	
 	/**
+	 * 设置父样式元素
+	 * @param parent
+	 */
+	public void setParent(StyleElement parent) {
+		if (this.style != null) {
+			this.style.setParent(parent.getStyle());
+		}
+	}
+	
+	/**
 	 * 获取{@link Style}，存在父级元素的Style时将设置父级元素的Style
 	 * @return
 	 */
 	public Style getStyle() {
-		if (this.parent != null) {
-			Style parentStyle = this.parent.getStyle();
-			if (this.style == null) {
-				return parentStyle;
-			} else if (parentStyle != null) {
-				this.style.setParent(parentStyle);
-			}
+		if (this.style == null && this.parent != null) {
+			return this.parent.getStyle();
 		}
 		return this.style;
 	}
