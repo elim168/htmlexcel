@@ -38,14 +38,14 @@ public class Tr extends StyleElement {
 	@Getter
 	private List<Td> cells;
 	@XmlAnyElement
-	private List<Element> childs;
+	private List<Element> children;
 	
 	public void afterUnmarshal(Unmarshaller unmarshaller, Object parent) throws Exception {
-		if (this.childs == null || this.childs.isEmpty()) {
+		if (this.children == null || this.children.isEmpty()) {
 			return;
 		}
-		cells = new ArrayList<>(childs.size());
-		for (Element child : childs) {
+		cells = new ArrayList<>(children.size());
+		for (Element child : children) {
 			if (!"td".equalsIgnoreCase(child.getNodeName())) {
 				continue;
 			}
